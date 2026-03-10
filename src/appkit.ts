@@ -1,51 +1,82 @@
-// src/config/appkit.ts (or wherever this file lives)
 import { createAppKit } from '@reown/appkit/react'
 import { EthersAdapter } from '@reown/appkit-adapter-ethers'
-console.log('Loaded Project ID:', import.meta.env.VITE_PROJECT_ID);
-// Reown Dashboard Project ID
-// Use your real ID from cloud.walletconnect.com (do NOT use fallback in production)
-const projectId = import.meta.env.VITE_PROJECT_ID?.trim()
+import { DEFAULT_CHAIN_ID } from './config'
 
-if (!projectId) {
-  console.error('Missing VITE_PROJECT_ID in .env — wallet connect will not work')
-  // Do NOT use fallback ID in real apps — it will fail on Reown servers
-}
+const FALLBACK_LOCALHOST_PROJECT_ID = 'b56e18d47c72ab683b10814fe9495694'
+
+export const projectId =
+  import.meta.env.VITE_REOWN_PROJECT_ID?.trim() || FALLBACK_LOCALHOST_PROJECT_ID
+
+const appUrl =
+  import.meta.env.VITE_APP_URL?.trim() ||
+  (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173')
 
 const metadata = {
-  name: 'Vehicle Title Registry',
-  description: 'Digitize vehicle titles on Avalanche Fuji',
-  url: import.meta.env.VITE_APP_URL?.trim() || 'http://localhost:5173',
-  icons: ['https://your-icon-url.com/icon.png'] // optional — can be empty []
+  name: 'Avalanche Balances Dapp',
+  description: 'Simple Avalanche (AVAX + WAVAX) balance viewer',
+  url: appUrl,
+  icons: ['https://avatars.githubusercontent.com/u/179229932']
 }
 
-// Initialize Reown AppKit (no 'networks' or 'chains' here — that's in wagmi config)
+const avalancheMainnet = {
+  id: 43114,
+  chainId: 43114,
+  name: 'Avalanche C-Chain',
+  network: 'avalanche',
+  nativeCurrency: { name: 'Avalanche', symbol: 'AVAX', decimals: 18 },
+  rpcUrls: {
+    default: {
+      http: ['https://api.avax.network/ext/bc/C/rpc']
+    }
+  },
+  blockExplorers: {
+    default: { name: 'Snowtrace', url: 'https://snowtrace.io' }
+  }
+} as any
+
+const avalancheFuji = {
+  id: 43113,
+  chainId: 43113,
+  name: 'Avalanche Fuji',
+  network: 'avalanche-fuji',
+  nativeCurrency: { name: 'Avalanche', symbol: 'AVAX', decimals: 18 },
+  rpcUrls: {
+    default: {
+      http: ['https://api.avax-test.network/ext/bc/C/rpc']
+    }
+  },
+  blockExplorers: {
+    default: { name: 'Snowtrace (Testnet)', url: 'https://testnet.snowtrace.io' }
+  }
+} as any
+
+export const networks =
+  DEFAULT_CHAIN_ID === 43114
+    ? [avalancheMainnet, avalancheFuji]
+    : [avalancheFuji, avalancheMainnet]
+
+
+const avaxChainIconUrl = new URL('/images/chain-avax.png', appUrl).toString()
+
+const featuredWalletIds = [
+  // Avalanche Core wallet id
+  'f323633c1f67055a45aac84e321af6ffe46322da677ffdd32f9bc1e33bafe29c',
+
+]
+
 export const appKit = createAppKit({
   adapters: [new EthersAdapter()],
+  networks,
   projectId,
   metadata,
-  networks: [
-    {
-      id: 43113,  // Fuji chain ID
-      name: 'Avalanche Fuji',
-   
-      nativeCurrency: {
-        name: 'Avalanche',
-        symbol: 'AVAX',
-        decimals: 18,
-      },
-      rpcUrls: {
-        default: { http: ['https://api.avax-test.network/ext/bc/C/rpc'] },
-        public: { http: ['https://api.avax-test.network/ext/bc/C/rpc'] },
-      },
-      blockExplorers: {
-        default: { name: 'Routescan', url: 'https://testnet.routescan.io' },
-      },
-      testnet: true,
-    }
-  ],
+  featuredWalletIds,
+
+  chainImages: {
+    43114: avaxChainIconUrl,
+    43113: avaxChainIconUrl
+  },
+
   features: {
-    analytics: true,
-    email: true,
-    socials: false,  // or ['google', 'apple'] if you want them
+    analytics: true
   }
 })
