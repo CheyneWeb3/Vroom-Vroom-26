@@ -2,6 +2,7 @@ import { Button, Grid, MenuItem, Stack, TextField } from '@mui/material'
 import { useState } from 'react'
 import { Page } from '../components/Page'
 import { FormStatus } from '../components/FormStatus'
+import { VinPlateScanner } from '../components/VinPlateScanner'
 import { TITLE_BRANDS } from '../config'
 import { getWriteContract, simulateWrite } from '../lib/contract'
 import { extractErrorMessage } from '../utils/extractError'
@@ -22,6 +23,7 @@ export function DigitizeLegacyPage({ walletProvider, canUse }: Props) {
     officialNote: ''
   })
 
+  const [scannerOpen, setScannerOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
@@ -68,18 +70,82 @@ export function DigitizeLegacyPage({ walletProvider, canUse }: Props) {
     >
       <Stack spacing={2}>
         <Grid container spacing={2}>
-          {['holder', 'vin', 'make', 'model', 'year', 'initialMileage', 'qrCodeData', 'initialTokenURI', 'officialNote'].map((key) => (
-            <Grid key={key} size={{ xs: 12, md: key === 'officialNote' || key === 'initialTokenURI' || key === 'qrCodeData' ? 12 : 6 }}>
+          <Grid size={{ xs: 12, md: 6 }}>
+            <TextField
+              label="holder"
+              value={form.holder}
+              onChange={(e) => setForm((prev) => ({ ...prev, holder: e.target.value }))}
+              fullWidth
+            />
+          </Grid>
+
+          <Grid size={{ xs: 12, md: 6 }}>
+            <Stack spacing={1.25}>
               <TextField
-                label={key}
-                value={(form as any)[key]}
-                onChange={(e) => setForm((prev) => ({ ...prev, [key]: e.target.value }))}
+                label="vin"
+                value={form.vin}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    vin: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '')
+                  }))
+                }
                 fullWidth
-                multiline={key === 'officialNote' || key === 'initialTokenURI' || key === 'qrCodeData'}
-                minRows={key === 'officialNote' ? 3 : 1}
               />
-            </Grid>
-          ))}
+
+              <Button variant="outlined" onClick={() => setScannerOpen(true)}>
+                Scan VIN Plate
+              </Button>
+            </Stack>
+          </Grid>
+
+          <Grid size={{ xs: 12, md: 6 }}>
+            <TextField
+              label="make"
+              value={form.make}
+              onChange={(e) => setForm((prev) => ({ ...prev, make: e.target.value }))}
+              fullWidth
+            />
+          </Grid>
+
+          <Grid size={{ xs: 12, md: 6 }}>
+            <TextField
+              label="model"
+              value={form.model}
+              onChange={(e) => setForm((prev) => ({ ...prev, model: e.target.value }))}
+              fullWidth
+            />
+          </Grid>
+
+          <Grid size={{ xs: 12, md: 6 }}>
+            <TextField
+              label="year"
+              value={form.year}
+              onChange={(e) => setForm((prev) => ({ ...prev, year: e.target.value }))}
+              fullWidth
+            />
+          </Grid>
+
+          <Grid size={{ xs: 12, md: 6 }}>
+            <TextField
+              label="initialMileage"
+              value={form.initialMileage}
+              onChange={(e) => setForm((prev) => ({ ...prev, initialMileage: e.target.value }))}
+              fullWidth
+            />
+          </Grid>
+
+          <Grid size={{ xs: 12, md: 6 }}>
+            <TextField
+              label="qrCodeData"
+              value={form.qrCodeData}
+              onChange={(e) => setForm((prev) => ({ ...prev, qrCodeData: e.target.value }))}
+              fullWidth
+              multiline
+              minRows={2}
+            />
+          </Grid>
+
           <Grid size={{ xs: 12, md: 6 }}>
             <TextField
               select
@@ -89,9 +155,33 @@ export function DigitizeLegacyPage({ walletProvider, canUse }: Props) {
               onChange={(e) => setForm((prev) => ({ ...prev, brand: e.target.value }))}
             >
               {TITLE_BRANDS.map((item, index) => (
-                <MenuItem key={item} value={String(index)}>{item}</MenuItem>
+                <MenuItem key={item} value={String(index)}>
+                  {item}
+                </MenuItem>
               ))}
             </TextField>
+          </Grid>
+
+          <Grid size={{ xs: 12 }}>
+            <TextField
+              label="initialTokenURI"
+              value={form.initialTokenURI}
+              onChange={(e) => setForm((prev) => ({ ...prev, initialTokenURI: e.target.value }))}
+              fullWidth
+              multiline
+              minRows={2}
+            />
+          </Grid>
+
+          <Grid size={{ xs: 12 }}>
+            <TextField
+              label="officialNote"
+              value={form.officialNote}
+              onChange={(e) => setForm((prev) => ({ ...prev, officialNote: e.target.value }))}
+              fullWidth
+              multiline
+              minRows={3}
+            />
           </Grid>
         </Grid>
 
@@ -100,6 +190,17 @@ export function DigitizeLegacyPage({ walletProvider, canUse }: Props) {
         </Button>
 
         <FormStatus loading={loading} error={error} success={success} />
+
+        <VinPlateScanner
+          open={scannerOpen}
+          onClose={() => setScannerOpen(false)}
+          onApplyVin={(vin) =>
+            setForm((prev) => ({
+              ...prev,
+              vin
+            }))
+          }
+        />
       </Stack>
     </Page>
   )
