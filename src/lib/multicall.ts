@@ -3,7 +3,7 @@ import { MULTICALL3_ADDRESS } from '../config'
 import { getReadProvider } from './contract'
 
 const MULTICALL3_ABI = [
-  'function aggregate3(tuple(address target,bool allowFailure,bytes callData)[] calls) payable returns (tuple(bool success,bytes returnData)[] returnData)'
+  'function aggregate3((address target,bool allowFailure,bytes callData)[] calls) payable returns ((bool success,bytes returnData)[] returnData)'
 ]
 
 export type MulticallInput = {
@@ -29,7 +29,7 @@ export async function aggregate3(calls: MulticallInput[]): Promise<MulticallResu
     callData: call.callData
   }))
 
-  const results = await multicall.aggregate3(formatted)
+  const results = await multicall.aggregate3.staticCall(formatted)
   return results as MulticallResult[]
 }
 

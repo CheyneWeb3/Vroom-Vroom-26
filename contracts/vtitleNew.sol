@@ -14,6 +14,7 @@ pragma solidity ^0.8.30;
  * - Notes/history are stored on-chain per title.
  * - tokenURI is supported for non-critical metadata such as media or display JSON.
  * - Direct public NFT transfers are blocked so title movement stays inside title workflows.
+ * - Vehicles can be marked as scrapped/destroyed without deleting on-chain history.
  */
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
@@ -34,7 +35,7 @@ contract VehicleTitleRegistry is ERC721, AccessControl, ReentrancyGuard {
     /// @notice Role allowed to assist with dealership transfer workflows and official notes.
     bytes32 public constant DEALER_ROLE = keccak256("DEALER_ROLE");
 
-    /// @notice Role allowed to perform official corrections, branding/status changes, freezes, and reassignments.
+    /// @notice Role allowed to perform official corrections, branding/status changes, freezes, reassignments, and scrapped status updates.
     bytes32 public constant REGULATOR_ROLE = keccak256("REGULATOR_ROLE");
 
     /**
@@ -70,6 +71,7 @@ contract VehicleTitleRegistry is ERC721, AccessControl, ReentrancyGuard {
      * @param brand Title branding/status classification.
      * @param state Operational state of the title record.
      * @param legacyDigitized True if the record was created from a pre-existing paper title.
+     * @param scrapped True if the vehicle is marked destroyed/scrapped.
      * @param createdAt Timestamp of record creation.
      * @param updatedAt Timestamp of last record update.
      */
@@ -83,6 +85,7 @@ contract VehicleTitleRegistry is ERC721, AccessControl, ReentrancyGuard {
         TitleBrand brand;
         RecordState state;
         bool legacyDigitized;
+        bool scrapped;
         uint256 createdAt;
         uint256 updatedAt;
     }
@@ -139,6 +142,13 @@ contract VehicleTitleRegistry is ERC721, AccessControl, ReentrancyGuard {
         uint256 paymentAmount
     );
 
+    /// @notice Emitted when a current holder transfers ownership through the simple ownership workflow without payment parameters.
+    event OwnershipTransferred(
+        uint256 indexed tokenId,
+        address indexed from,
+        address indexed to
+    );
+
     /// @notice Emitted when a dealer-assisted transfer occurs.
     event OwnershipTransferredByDealer(
         uint256 indexed tokenId,
@@ -176,6 +186,13 @@ contract VehicleTitleRegistry is ERC721, AccessControl, ReentrancyGuard {
         uint256 indexed tokenId,
         uint256 previousMileage,
         uint256 newMileage,
+        address indexed updatedBy
+    );
+
+    /// @notice Emitted when scrapped/destroyed status changes.
+    event VehicleDestroyedStatusUpdated(
+        uint256 indexed tokenId,
+        bool scrapped,
         address indexed updatedBy
     );
 
@@ -395,8 +412,37 @@ contract VehicleTitleRegistry is ERC721, AccessControl, ReentrancyGuard {
     // -------------------------------------------------------------------------
 
     /**
-     * @notice Transfer title to a new holder through the normal holder-driven workflow.
-     * @dev This is the standard day-to-day transfer path. The current holder initiates the transfer.
+     * @notice Transfer ownership to a new holder through a simple holder-driven workflow.
+     * @dev This is a no-payment ownership transfer path for ordinary holder-to-holder changes.
+     * @param tokenId Title token id.
+     * @param newHolder Address of the next holder.
+     * @param holderNote Optional note to store with the transfer.
+     */
+    function transferOwnership(
+        uint256 tokenId,
+        address newHolder,
+        string calldata holderNote
+    ) external nonReentrant {
+        require(_existsStrict(tokenId), "Token does not exist");
+        require(ownerOf(tokenId) == msg.sender, "Not current holder");
+        require(newHolder != address(0), "Invalid new holder");
+        require(newHolder != msg.sender, "Cannot transfer to self");
+        require(_records[tokenId].state == RecordState.ACTIVE, "Record not active");
+        require(!_records[tokenId].scrapped, "Vehicle marked destroyed");
+
+        _workflowTransfer(msg.sender, newHolder, tokenId);
+        _touchRecord(tokenId);
+
+        emit OwnershipTransferred(tokenId, msg.sender, newHolder);
+
+        if (bytes(holderNote).length > 0) {
+            _addNoteInternal(tokenId, msg.sender, false, holderNote);
+        }
+    }
+
+    /**
+     * @notice Transfer title to a new holder through the holder workflow with optional ERC20 payment.
+     * @dev This is the standard day-to-day transfer path when a payment flow is also desired.
      * @param tokenId Title token id.
      * @param newHolder Address of the next holder.
      * @param paymentToken Optional ERC20 payment token. Set to zero address when paymentAmount is zero.
@@ -415,6 +461,7 @@ contract VehicleTitleRegistry is ERC721, AccessControl, ReentrancyGuard {
         require(newHolder != address(0), "Invalid new holder");
         require(newHolder != msg.sender, "Cannot transfer to self");
         require(_records[tokenId].state == RecordState.ACTIVE, "Record not active");
+        require(!_records[tokenId].scrapped, "Vehicle marked destroyed");
 
         if (paymentAmount > 0) {
             require(paymentToken != address(0), "Invalid payment token");
@@ -454,6 +501,7 @@ contract VehicleTitleRegistry is ERC721, AccessControl, ReentrancyGuard {
         require(newHolder != address(0), "Invalid new holder");
         require(newHolder != from, "Cannot transfer to self");
         require(_records[tokenId].state == RecordState.ACTIVE, "Record not active");
+        require(!_records[tokenId].scrapped, "Vehicle marked destroyed");
 
         _workflowTransfer(from, newHolder, tokenId);
         _touchRecord(tokenId);
@@ -508,6 +556,7 @@ contract VehicleTitleRegistry is ERC721, AccessControl, ReentrancyGuard {
         require(_existsStrict(tokenId), "Token does not exist");
         require(ownerOf(tokenId) == msg.sender, "Not current holder");
         require(_records[tokenId].state == RecordState.ACTIVE, "Record not active");
+        require(!_records[tokenId].scrapped, "Vehicle marked destroyed");
         require(newMileage > _records[tokenId].mileage, "Mileage cannot decrease");
 
         uint256 previousMileage = _records[tokenId].mileage;
@@ -559,6 +608,30 @@ contract VehicleTitleRegistry is ERC721, AccessControl, ReentrancyGuard {
         _touchRecord(tokenId);
 
         emit RecordStateUpdated(tokenId, previousState, newState, msg.sender);
+
+        if (bytes(officialNote).length > 0) {
+            _addNoteInternal(tokenId, msg.sender, true, officialNote);
+        }
+    }
+
+    /**
+     * @notice Mark or unmark a vehicle as destroyed/scrapped.
+     * @dev Intended for official registry-level destruction status updates while preserving history.
+     * @param tokenId Title token id.
+     * @param destroyed New scrapped status.
+     * @param officialNote Optional official note.
+     */
+    function setVehicleDestroyed(
+        uint256 tokenId,
+        bool destroyed,
+        string calldata officialNote
+    ) external onlyRole(REGULATOR_ROLE) {
+        require(_existsStrict(tokenId), "Token does not exist");
+
+        _records[tokenId].scrapped = destroyed;
+        _touchRecord(tokenId);
+
+        emit VehicleDestroyedStatusUpdated(tokenId, destroyed, msg.sender);
 
         if (bytes(officialNote).length > 0) {
             _addNoteInternal(tokenId, msg.sender, true, officialNote);
@@ -789,6 +862,7 @@ contract VehicleTitleRegistry is ERC721, AccessControl, ReentrancyGuard {
             brand: brand,
             state: RecordState.ACTIVE,
             legacyDigitized: legacyDigitized,
+            scrapped: false,
             createdAt: block.timestamp,
             updatedAt: block.timestamp
         });
