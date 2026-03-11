@@ -14,6 +14,8 @@ This app is built for the deployed Fuji contract and provides a professional int
 - regulator and registrar record controls
 - admin role management
 
+
+[user setup here](https://github.com/CheyneWeb3/Vroom-Vroom-26/blob/main/UserGuide.md)
 ---
 
 ## Network
