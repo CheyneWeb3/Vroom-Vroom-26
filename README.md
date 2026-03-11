@@ -1,12 +1,3 @@
-Yep. Here’s a clean README you can drop into the repo, followed by the Remix deploy steps.
-
-One important note before the steps: **Solidity 0.8.30 defaults to `prague`, not `cancun`**, so if you specifically want a **Cancun** build in Remix, you need to set the EVM version manually to **Cancun** in the compiler settings. ([Solidity Programming Language][1])
-
-Also, for a public-network deployment from Remix, the normal path is to use **Injected Provider** with your browser wallet connected to the target network. ([Remix IDE Documentation][2])
-
-## `README.md`
-
-````md
 # VTitle Registry App
 
 A React + TypeScript + MUI app for interacting with the **VehicleTitleRegistry** contract on **Avalanche Fuji**.
@@ -335,11 +326,5 @@ After deploy, test these in order:
 6. dealer transfer works
 7. regulator record controls work
 8. tokenURI updates and displays correctly
-
-If you want, I’ll turn this into two separate files next:
-
-* `README.md`
-* `DEPLOYMENT.md`
-
-[1]: https://www.soliditylang.org/blog/2025/05/07/solidity-0.8.30-release-announcement/?utm_source=chatgpt.com "Solidity 0.8.30 Release Announcement"
+"Solidity 0.8.30 Release Announcement"
 [2]: https://remix-ide.readthedocs.io/en/latest/run.html?utm_source=chatgpt.com "Deploy & Run — Remix - Ethereum IDE 1 documentation"
