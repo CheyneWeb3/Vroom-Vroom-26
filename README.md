@@ -1,10 +1,11 @@
-# InHaus Devs — Avalanche Build-Games Boilerplate
+# InHaus Devs — Avalanche Build-Games Boilerplate V2
 
 Vite + React + TypeScript dApp boilerplate using:
 
 - **Reown AppKit** (WalletConnect)
 - **Ethers v6**
 - **MUI** (Avalanche-themed)
+- **Core Wallet** added to featured wallets (appkit modal)
 
 Includes **Avalanche Fuji + Mainnet** with **Fuji as the default**.
 

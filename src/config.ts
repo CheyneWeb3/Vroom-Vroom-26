@@ -1,18 +1,59 @@
-// InHaus Devs — Avalanche Build-Games boilerplate config
-
-export const APP_NAME = 'Avalanche Build-Games Boilerplate'
-
-// Default chain on first load (Fuji testnet)
+export const APP_NAME = 'VTitle Registry'
+export const APP_SUBTITLE = 'Digital vehicle title registry for Avalanche Fuji'
 export const DEFAULT_CHAIN_ID = 43113
 
-// Token addresses per network
-// WAVAX mainnet: 0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7
-// WAVAX Fuji:    0xd00ae08403b9bbb9124bb305c09058e32c39a48c
-export const TOKENS = {
-  43114: {
-    WAVAX: '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7'
-  },
+export const CONTRACT_ADDRESS = '0x9b4FAc0127C85d7EA6158c6C1747F2E37430312C'
+
+export const CONTRACT_DEPLOY_BLOCK = Number(
+  import.meta.env.VITE_CONTRACT_DEPLOY_BLOCK ?? 52595336
+)
+
+export const MULTICALL3_ADDRESS =
+  import.meta.env.VITE_MULTICALL3_ADDRESS?.trim() ||
+  '0xcA11bde05977b3631167028862bE2a173976CA11'
+
+export const FALLBACK_LOOKBACK_BLOCKS = Number(
+  import.meta.env.VITE_LOOKBACK_BLOCKS ?? 120000
+)
+
+export const LOG_CHUNK_SIZE = Number(
+  import.meta.env.VITE_LOG_CHUNK_SIZE ?? 2500
+)
+
+export const APP_URL =
+  import.meta.env.VITE_APP_URL?.trim() ||
+  (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173')
+
+export const CHAIN_INFO: Record<
+  number,
+  { name: string; hex: string; explorer: string; rpc: string }
+> = {
   43113: {
-    WAVAX: '0xd00ae08403b9bbb9124bb305c09058e32c39a48c'
+    name: 'Avalanche Fuji',
+    hex: '0xa869',
+    explorer: 'https://testnet.snowtrace.io',
+    rpc: 'https://api.avax-test.network/ext/bc/C/rpc'
+  },
+  43114: {
+    name: 'Avalanche C-Chain',
+    hex: '0xa86a',
+    explorer: 'https://snowtrace.io',
+    rpc: 'https://api.avax.network/ext/bc/C/rpc'
   }
-} as const
+}
+
+export const TITLE_BRANDS: readonly string[] = [
+  'Clean',
+  'Salvage',
+  'Rebuilt',
+  'Lien',
+  'Odometer discrepancy',
+  'Flood',
+  'Other'
+]
+
+export const RECORD_STATES: readonly string[] = [
+  'Active',
+  'Frozen',
+  'Revoked'
+]

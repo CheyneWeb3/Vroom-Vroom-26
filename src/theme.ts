@@ -1,7 +1,5 @@
 import { createTheme } from '@mui/material/styles'
 
-// Avalanche brand-ish palette (dark, AVAX red accents)
-// Keep it simple: dark surfaces + red primary.
 export const theme = createTheme({
   palette: {
     mode: 'dark',
