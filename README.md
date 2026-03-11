@@ -26,11 +26,11 @@ This app is built for the deployed Fuji contract and provides a professional int
 
 ## Deployed Contract
 
-- **VehicleTitleRegistry:** `0x9b4FAc0127C85d7EA6158c6C1747F2E37430312C`
+- **VehicleTitleRegistry:** `0x067cdaa02116F8C83830fab1a55bc76E6Ff173A5`
 
 Explorer:
 
-- `https://testnet.routescan.io/address/0x9b4FAc0127C85d7EA6158c6C1747F2E37430312C`
+- `https://testnet.routescan.io/address/0x067cdaa02116F8C83830fab1a55bc76E6Ff173A5`
 
 ---
 
