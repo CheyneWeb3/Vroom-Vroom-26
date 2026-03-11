@@ -33,8 +33,7 @@ type Props = {
 
 const directLinks = [
   { label: 'Dashboard', to: '/' },
-  { label: 'My Titles', to: '/titles' },
-  { label: 'Lookup', to: '/lookup' }
+  { label: 'My Titles', to: '/titles' }
 ]
 
 export function AppShell({

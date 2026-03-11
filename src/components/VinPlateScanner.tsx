@@ -56,47 +56,26 @@ function cleanLooseValue(value: string): string {
   return normalizeOcrText(value).replace(/\s+/g, ' ').trim()
 }
 
-function cleanSingleToken(value: string): string {
-  return cleanLooseValue(value).replace(/[^A-Z0-9/-]/g, ' ').replace(/\s+/g, ' ').trim()
-}
-
-function linesAroundLabel(lines: string[], labelMatchers: RegExp[]): string[] {
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i]
-    if (labelMatchers.some((rx) => rx.test(line))) {
-      return [
-        line,
-        lines[i + 1] || '',
-        lines[i + 2] || '',
-        lines[i + 3] || ''
-      ].filter(Boolean)
-    }
-  }
-  return []
-}
-
 function extractVinFromText(raw: string): string {
   const upper = normalizeOcrText(raw)
   const lines = upper.split('\n').map((s) => s.trim()).filter(Boolean)
 
-  const vinContext = linesAroundLabel(lines, [
-    /VEHICLE IDENTIFICATION NUMBER/,
-    /\bVIN\b/
-  ])
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
 
-  if (vinContext.length) {
-    const joined = vinContext.join(' ')
-    const parts = joined.replace(/[^A-Z0-9]/g, ' ').split(/\s+/).filter(Boolean)
+    if (line.includes('VEHICLE IDENTIFICATION NUMBER') || /\bVIN\b/.test(line)) {
+      const near = [line, lines[i + 1] || '', lines[i + 2] || ''].join(' ')
+      const parts = near.replace(/[^A-Z0-9]/g, ' ').split(/\s+/).filter(Boolean)
 
-    for (const part of parts) {
-      const candidate = normalizeVinCandidate(part)
-      if (candidate.length === 17 && isValidVinLike(candidate)) {
-        return candidate
+      for (const part of parts) {
+        const candidate = normalizeVinCandidate(part)
+        if (candidate.length === 17 && isValidVinLike(candidate)) {
+          return candidate
+        }
       }
     }
   }
 
-  // fallback to full-text scan
   const parts = upper.replace(/[^A-Z0-9]/g, ' ').split(/\s+/).filter(Boolean)
   for (const part of parts) {
     const candidate = normalizeVinCandidate(part)
@@ -108,70 +87,53 @@ function extractVinFromText(raw: string): string {
   return ''
 }
 
-function extractTitleDocFromText(raw: string): string {
-  const upper = normalizeOcrText(raw)
-  const lines = upper.split('\n').map((s) => s.trim()).filter(Boolean)
-
-  const ctx = linesAroundLabel(lines, [/TITLE DOCUMENT NUMBER/, /DOCUMENT NUMBER/])
-  const joined = ctx.join(' ')
-
-  const parts = joined.replace(/[^A-Z0-9]/g, ' ').split(/\s+/).filter(Boolean)
-
-  for (const part of parts) {
-    const cleaned = part.replace(/[^A-Z0-9]/g, '')
-    if (cleaned.length >= 10 && cleaned.length <= 24) {
-      return cleaned
-    }
-  }
-
-  return ''
-}
-
 function extractYear(raw: string): string {
   const upper = normalizeOcrText(raw)
-  const lines = upper.split('\n').map((s) => s.trim()).filter(Boolean)
-
-  const ctx = linesAroundLabel(lines, [/YEAR MODEL/, /\bYEAR\b/]).join(' ')
-  return ctx.match(/\b(19\d{2}|20\d{2})\b/)?.[1] ?? ''
+  return upper.match(/\b(19\d{2}|20\d{2})\b/)?.[1] ?? ''
 }
 
 function normalizeMake(raw: string): string {
   const upper = normalizeOcrText(raw)
-  const lines = upper.split('\n').map((s) => s.trim()).filter(Boolean)
 
-  const ctx = linesAroundLabel(lines, [/MAKE OF VEHICLE/, /\bMAKE\b/]).join(' ')
+  if (upper.includes('LEXUS') || upper.includes('LEXS')) return 'LEXUS'
+  if (upper.includes('TOYOTA')) return 'TOYOTA'
+  if (upper.includes('HONDA')) return 'HONDA'
+  if (upper.includes('FORD')) return 'FORD'
+  if (upper.includes('BMW')) return 'BMW'
+  if (upper.includes('AUDI')) return 'AUDI'
 
-  if (ctx.includes('LEXUS') || ctx.includes('LEXS')) return 'LEXUS'
-  if (ctx.includes('TOYOTA')) return 'TOYOTA'
-  if (ctx.includes('HONDA')) return 'HONDA'
-  if (ctx.includes('FORD')) return 'FORD'
-  if (ctx.includes('BMW')) return 'BMW'
-  if (ctx.includes('AUDI')) return 'AUDI'
-
-  const parts = ctx.replace(/[^A-Z0-9-]/g, ' ').split(/\s+/).filter(Boolean)
-  const banned = new Set(['MAKE', 'OF', 'VEHICLE'])
-  const candidate = parts.find((p) => !banned.has(p))
-  return candidate || ''
+  const match = upper.match(/MAKE\s+OF\s+VEHICLE[\s\n]*([A-Z0-9-]{2,20})/)
+  return match?.[1] ?? ''
 }
 
 function normalizeModel(raw: string): string {
   const upper = normalizeOcrText(raw)
-  const lines = upper.split('\n').map((s) => s.trim()).filter(Boolean)
+  const match = upper.match(/\bMODEL[\s\n]*([A-Z0-9-]{1,20})/)
+  const candidate = match?.[1] ?? ''
 
-  const ctx = linesAroundLabel(lines, [/\bMODEL\b/]).join(' ')
-  const parts = ctx.replace(/[^A-Z0-9-]/g, ' ').split(/\s+/).filter(Boolean)
-  const banned = new Set(['MODEL', 'MAKE', 'YEAR', 'VEHICLE', 'CAPACITY', 'WEIGHT'])
+  if (!candidate) return ''
+  if (['MAKE', 'MODEL', 'YEAR', 'VEHICLE'].includes(candidate)) return ''
 
-  const candidate = parts.find((p) => !banned.has(p))
-  return candidate || ''
+  return candidate
 }
 
 function extractMileage(raw: string): string {
   const upper = normalizeOcrText(raw)
-  const lines = upper.split('\n').map((s) => s.trim()).filter(Boolean)
 
-  const ctx = linesAroundLabel(lines, [/ODOMETER READING/, /ACTUAL MILEAGE/, /\bMILEAGE\b/]).join(' ')
-  return ctx.match(/\b([0-9]{1,7})\b/)?.[1] ?? ''
+  const odoMatch =
+    upper.match(/ODOMETER\s+READING[\s:]*([0-9]{1,7})/) ||
+    upper.match(/ACTUAL\s+MILEAGE[\s:]*([0-9]{1,7})/) ||
+    upper.match(/\bMILEAGE[\s:]*([0-9]{1,7})\b/)
+
+  return odoMatch?.[1] ?? ''
+}
+
+function extractTitleDoc(raw: string): string {
+  const upper = normalizeOcrText(raw)
+  const match =
+    upper.match(/TITLE\s+DOCUMENT\s+NUMBER[\s\S]{0,40}?([A-Z0-9]{6,32})/) ||
+    upper.match(/DOCUMENT\s+NUMBER[\s\S]{0,40}?([A-Z0-9]{6,32})/)
+  return match?.[1] ?? ''
 }
 
 function buildFieldsFromFullPageOcr(rawText: string, sourceImage?: string): OcrVehicleFields {
@@ -180,13 +142,7 @@ function buildFieldsFromFullPageOcr(rawText: string, sourceImage?: string): OcrV
   const make = normalizeMake(rawText)
   const model = normalizeModel(rawText)
   const initialMileage = extractMileage(rawText)
-  const titleDoc = extractTitleDocFromText(rawText)
-
-  const qrCodeDataParts = [
-    titleDoc ? `TitleDoc: ${titleDoc}` : '',
-    initialMileage ? `Mileage: ${initialMileage}` : '',
-    vin ? `VIN: ${vin}` : ''
-  ].filter(Boolean)
+  const titleDoc = extractTitleDoc(rawText)
 
   const officialNoteParts = [
     'OCR import from captured/uploaded vehicle title image.',
@@ -205,7 +161,7 @@ function buildFieldsFromFullPageOcr(rawText: string, sourceImage?: string): OcrV
     make,
     model,
     initialMileage,
-    qrCodeData: qrCodeDataParts.join(' | '),
+    qrCodeData: vin || '',
     officialNote: officialNoteParts.join(' '),
     sourceImage
   }
@@ -223,11 +179,11 @@ export function VinPlateScanner({ open, onClose, onApplyVin, onApplyFields }: Pr
   const [ocrLoading, setOcrLoading] = useState(false)
   const [ocrProgress, setOcrProgress] = useState(0)
   const [rawText, setRawText] = useState('')
-  const [candidateVin, setCandidateVin] = useState('')
-  const [parsedFields, setParsedFields] = useState<OcrVehicleFields>({})
   const [usedUpload, setUsedUpload] = useState(false)
 
-  const canApplyVin = useMemo(() => isValidVinLike(candidateVin), [candidateVin])
+  const [fields, setFields] = useState<OcrVehicleFields>({})
+
+  const canApplyVin = useMemo(() => isValidVinLike(fields.vin || ''), [fields.vin])
 
   async function startCamera() {
     setCameraError(null)
@@ -269,8 +225,7 @@ export function VinPlateScanner({ open, onClose, onApplyVin, onApplyFields }: Pr
     setOcrProgress(0)
     setOcrError(null)
     setRawText('')
-    setCandidateVin('')
-    setParsedFields({})
+    setFields({})
 
     try {
       const passes: string[] = []
@@ -288,15 +243,14 @@ export function VinPlateScanner({ open, onClose, onApplyVin, onApplyFields }: Pr
       }
 
       const mergedText = passes.join('\n\n')
-      const fields = buildFieldsFromFullPageOcr(mergedText, imageSource)
+      const parsed = buildFieldsFromFullPageOcr(mergedText, imageSource)
 
       setRawText(
         passes.map((text, index) => `--- OCR PASS ${index + 1} ---\n${text.trim()}`).join('\n\n')
       )
-      setCandidateVin(fields.vin || '')
-      setParsedFields(fields)
+      setFields(parsed)
 
-      if (!fields.vin) {
+      if (!parsed.vin) {
         setOcrError('No valid VIN could be extracted from the full document OCR. Try a clearer image or crop closer to the VIN/title fields.')
       }
     } catch (e: any) {
@@ -343,17 +297,18 @@ export function VinPlateScanner({ open, onClose, onApplyVin, onApplyFields }: Pr
   }
 
   function handleApplyVin() {
-    if (!canApplyVin) return
-    onApplyVin(candidateVin)
+    if (!canApplyVin || !fields.vin) return
+    onApplyVin(fields.vin)
     onClose()
   }
 
   function handleApplyFields() {
     if (!onApplyFields) return
     onApplyFields({
-      ...parsedFields,
-      vin: candidateVin || parsedFields.vin || '',
-      sourceImage: previewSrc || parsedFields.sourceImage
+      ...fields,
+      vin: fields.vin || '',
+      qrCodeData: fields.vin || '',
+      sourceImage: previewSrc || fields.sourceImage
     })
     onClose()
   }
@@ -366,9 +321,8 @@ export function VinPlateScanner({ open, onClose, onApplyVin, onApplyFields }: Pr
       setCameraError(null)
       setOcrError(null)
       setRawText('')
-      setCandidateVin('')
-      setParsedFields({})
       setPreviewSrc('')
+      setFields({})
       setOcrLoading(false)
       setOcrProgress(0)
       setUsedUpload(false)
@@ -386,7 +340,7 @@ export function VinPlateScanner({ open, onClose, onApplyVin, onApplyFields }: Pr
       <DialogContent>
         <Stack spacing={2}>
           <Typography variant="body2" color="text.secondary">
-            OCR now reads the full document and maps values by label, so the Vehicle Identification Number should be separated from the title document number.
+            OCR reads the full document and maps values by label. You can edit the parsed fields before applying them to the form.
           </Typography>
 
           {!usedUpload ? (
@@ -456,19 +410,65 @@ export function VinPlateScanner({ open, onClose, onApplyVin, onApplyFields }: Pr
 
           <TextField
             label="Detected VIN"
-            value={candidateVin}
-            onChange={(e) => setCandidateVin(normalizeVinCandidate(e.target.value))}
+            value={fields.vin || ''}
+            onChange={(e) =>
+              setFields((prev) => ({
+                ...prev,
+                vin: normalizeVinCandidate(e.target.value),
+                qrCodeData: normalizeVinCandidate(e.target.value)
+              }))
+            }
             fullWidth
-            helperText="Review this before applying it to the form."
+            helperText="Review and edit this before applying it to the form."
           />
 
           <Stack spacing={1}>
             <Typography variant="subtitle2">Parsed OCR Fields</Typography>
-            <TextField label="Year" value={parsedFields.year || ''} fullWidth InputProps={{ readOnly: true }} />
-            <TextField label="Make" value={parsedFields.make || ''} fullWidth InputProps={{ readOnly: true }} />
-            <TextField label="Model" value={parsedFields.model || ''} fullWidth InputProps={{ readOnly: true }} />
-            <TextField label="Mileage" value={parsedFields.initialMileage || ''} fullWidth InputProps={{ readOnly: true }} />
-            <TextField label="QR / Reference Data" value={parsedFields.qrCodeData || ''} fullWidth InputProps={{ readOnly: true }} />
+
+            <TextField
+              label="Year"
+              value={fields.year || ''}
+              onChange={(e) => setFields((prev) => ({ ...prev, year: cleanLooseValue(e.target.value) }))}
+              fullWidth
+            />
+
+            <TextField
+              label="Make"
+              value={fields.make || ''}
+              onChange={(e) => setFields((prev) => ({ ...prev, make: cleanLooseValue(e.target.value) }))}
+              fullWidth
+            />
+
+            <TextField
+              label="Model"
+              value={fields.model || ''}
+              onChange={(e) => setFields((prev) => ({ ...prev, model: cleanLooseValue(e.target.value) }))}
+              fullWidth
+            />
+
+            <TextField
+              label="Mileage"
+              value={fields.initialMileage || ''}
+              onChange={(e) => setFields((prev) => ({ ...prev, initialMileage: cleanLooseValue(e.target.value) }))}
+              fullWidth
+            />
+
+            <TextField
+              label="QR / Reference Data"
+              value={fields.qrCodeData || ''}
+              onChange={(e) => setFields((prev) => ({ ...prev, qrCodeData: cleanLooseValue(e.target.value) }))}
+              fullWidth
+              helperText="For now this should be the VIN only."
+            />
+
+            <TextField
+              label="Official Note"
+              value={fields.officialNote || ''}
+              onChange={(e) => setFields((prev) => ({ ...prev, officialNote: e.target.value }))}
+              fullWidth
+              multiline
+              minRows={3}
+            />
           </Stack>
 
           <TextField
@@ -487,7 +487,7 @@ export function VinPlateScanner({ open, onClose, onApplyVin, onApplyFields }: Pr
         <Button variant="outlined" onClick={handleApplyVin} disabled={!canApplyVin}>
           Use VIN Only
         </Button>
-        <Button variant="contained" onClick={handleApplyFields} disabled={!candidateVin && !parsedFields.year && !parsedFields.make}>
+        <Button variant="contained" onClick={handleApplyFields} disabled={!fields.vin && !fields.year && !fields.make}>
           Use OCR Data
         </Button>
       </DialogActions>
