@@ -1,6 +1,3 @@
-Use this as the full **`README.md`** file exactly.
-
-````md
 # VTitle Registry App
 
 A React + TypeScript + MUI application for interacting with the **VehicleTitleRegistry** contract on **Avalanche Fuji**.
@@ -374,8 +371,3 @@ Common causes:
 * record not active
 * invalid token ID
 * missing token approval for ERC20 payment transfer
-
-```
-
-If you want the same cleanup done for a separate `DEPLOYMENT.md`, say so and I’ll format that properly too.
-```
