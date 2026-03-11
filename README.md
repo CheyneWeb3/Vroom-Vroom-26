@@ -133,20 +133,6 @@ yarn build
 npm run build
 ```
 
-## Preview production build
-
-### With Yarn
-
-```bash
-yarn preview
-```
-
-### With npm
-
-```bash
-npm run preview
-```
-
 ## Project Structure
 
 ```text
