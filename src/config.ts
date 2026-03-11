@@ -2,7 +2,13 @@ export const APP_NAME = 'VTitle Registry'
 export const APP_SUBTITLE = 'Digital vehicle title registry for Avalanche Fuji'
 export const DEFAULT_CHAIN_ID = 43113
 
-export const CONTRACT_ADDRESS = '0x067cdaa02116F8C83830fab1a55bc76E6Ff173A5'
+const contractAddress = import.meta.env.VITE_CONTRACT_ADDRESS?.trim()
+
+if (!contractAddress) {
+  throw new Error('Missing VITE_CONTRACT_ADDRESS in .env')
+}
+
+export const CONTRACT_ADDRESS = contractAddress
 
 export const CONTRACT_DEPLOY_BLOCK = Number(
   import.meta.env.VITE_CONTRACT_DEPLOY_BLOCK ?? 52595336
@@ -16,10 +22,6 @@ export const FALLBACK_LOOKBACK_BLOCKS = Number(
   import.meta.env.VITE_LOOKBACK_BLOCKS ?? 120000
 )
 
-/**
- * Fuji RPC is rejecting anything above 2048 in your logs,
- * so keep this comfortably below that.
- */
 export const LOG_CHUNK_SIZE = Number(
   import.meta.env.VITE_LOG_CHUNK_SIZE ?? 1500
 )
