@@ -43,54 +43,26 @@ function looksLikeImage(url?: string) {
   )
 }
 
-function FieldTile({
+function DetailRow({
   label,
-  value,
-  wide = false
+  value
 }: {
   label: string
   value: React.ReactNode
-  wide?: boolean
 }) {
   return (
-    <Box
-      sx={{
-        p: { xs: 1.5, sm: 1.75 },
-        minHeight: 92,
-        borderRadius: 3,
-        border: '1px solid',
-        borderColor: 'rgba(255,255,255,0.08)',
-        bgcolor: 'rgba(255,255,255,0.03)',
-        gridColumn: wide ? '1 / -1' : 'auto'
-      }}
-    >
-      <Typography
-        variant="caption"
-        sx={{
-          color: 'text.secondary',
-          letterSpacing: 0.35,
-          display: 'block',
-          mb: 1
-        }}
-      >
+    <Stack spacing={0.25}>
+      <Typography variant="caption" color="text.secondary" sx={{ letterSpacing: 0.25 }}>
         {label}
       </Typography>
-
-      <Typography
-        variant="body1"
-        sx={{
-          fontWeight: 800,
-          lineHeight: 1.35,
-          wordBreak: 'break-word'
-        }}
-      >
+      <Typography variant="body1" sx={{ fontWeight: 700, wordBreak: 'break-word' }}>
         {value}
       </Typography>
-    </Box>
+    </Stack>
   )
 }
 
-function SectionCard({
+function Panel({
   title,
   subtitle,
   children
@@ -102,26 +74,24 @@ function SectionCard({
   return (
     <Card
       sx={{
-        borderRadius: 4,
+        borderRadius: 2,
         border: '1px solid rgba(255,255,255,0.08)',
-        background:
-          'linear-gradient(180deg, rgba(255,255,255,0.035) 0%, rgba(255,255,255,0.02) 100%)',
-        boxShadow: '0 10px 28px rgba(0,0,0,0.22)'
+        bgcolor: 'rgba(255,255,255,0.02)',
+        boxShadow: 'none'
       }}
     >
-      <CardContent sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
-        <Stack spacing={2}>
+      <CardContent sx={{ p: { xs: 1.75, sm: 2.25 } }}>
+        <Stack spacing={1.75}>
           <Box>
-            <Typography variant="h6" fontWeight={900}>
+            <Typography variant="h6" fontWeight={800}>
               {title}
             </Typography>
             {subtitle ? (
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
                 {subtitle}
               </Typography>
             ) : null}
           </Box>
-
           {children}
         </Stack>
       </CardContent>
@@ -326,251 +296,181 @@ export function TitleDetailsPage() {
       subtitle={`${title.record.year.toString()} ${title.record.make} ${title.record.model}`}
       chips={[titleBrandLabel(title.record.brand), recordStateLabel(title.record.state)]}
     >
-      <Stack spacing={3}>
-        <Card
-          sx={{
-            borderRadius: 4,
-            border: '1px solid rgba(255,255,255,0.08)',
-            background:
-              'linear-gradient(180deg, rgba(255,255,255,0.035) 0%, rgba(255,255,255,0.02) 100%)',
-            boxShadow: '0 14px 32px rgba(0,0,0,0.24)'
-          }}
-        >
-          <CardContent sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
-            <Stack spacing={3}>
-              <Stack
-                direction={{ xs: 'column', lg: 'row' }}
-                justifyContent="space-between"
-                alignItems={{ xs: 'flex-start', lg: 'center' }}
-                spacing={2}
-              >
-                <Box>
-                  <Typography variant="h5" fontWeight={900}>
-                    Registry Vehicle Record
-                  </Typography>
-                  <Typography color="text.secondary" sx={{ mt: 0.5 }}>
-                    Official digital vehicle registry view
-                  </Typography>
-                </Box>
-
+      <Stack spacing={2.25}>
+        <Grid container spacing={2}>
+          <Grid size={{ xs: 12, lg: 8 }}>
+            <Panel
+              title="Registry Vehicle Record"
+              subtitle="Official digital vehicle registry view"
+            >
+              <Stack spacing={2}>
                 <Stack
-                  direction={{ xs: 'column', sm: 'row' }}
-                  spacing={1.25}
-                  alignItems={{ xs: 'stretch', sm: 'center' }}
-                  justifyContent="flex-end"
-                  useFlexGap
-                  flexWrap="wrap"
-                  sx={{ width: { xs: '100%', lg: 'auto' } }}
+                  direction={{ xs: 'column', md: 'row' }}
+                  justifyContent="space-between"
+                  alignItems={{ xs: 'flex-start', md: 'center' }}
+                  spacing={1.5}
                 >
                   <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                    <Chip label={titleBrandLabel(title.record.brand)} />
-                    <Chip label={recordStateLabel(title.record.state)} variant="outlined" />
-                    <Chip label={`Token #${title.tokenId.toString()}`} variant="outlined" />
+                    <Chip label={titleBrandLabel(title.record.brand)} size="small" />
+                    <Chip label={recordStateLabel(title.record.state)} size="small" variant="outlined" />
+                    <Chip label={`Token #${title.tokenId.toString()}`} size="small" variant="outlined" />
                   </Stack>
 
                   <Button
                     variant="outlined"
                     onClick={handlePrintCertificate}
-                    sx={{
-                      whiteSpace: 'nowrap',
-                      minHeight: 40,
-                      alignSelf: { xs: 'stretch', sm: 'center' }
-                    }}
+                    sx={{ whiteSpace: 'nowrap', minHeight: 38 }}
                   >
                     Print Digital Certificate
                   </Button>
                 </Stack>
-              </Stack>
 
-              <Divider />
+                <Divider />
 
-              <Grid container spacing={2}>
-                <Grid size={{ xs: 12, lg: 8 }}>
-                  <Stack spacing={2}>
-                    <SectionCard
-                      title="Vehicle Identity"
-                      subtitle="Core vehicle and registry identification details."
-                    >
-                      <Box
-                        sx={{
-                          display: 'grid',
-                          gridTemplateColumns: {
-                            xs: 'repeat(2, minmax(0, 1fr))',
-                            md: 'repeat(3, minmax(0, 1fr))'
-                          },
-                          gap: 1.5
-                        }}
-                      >
-                        <FieldTile label="VIN" value={title.record.vin} wide />
-                        <FieldTile label="Make" value={title.record.make} />
-                        <FieldTile label="Model" value={title.record.model} />
-                        <FieldTile label="Year" value={title.record.year.toString()} />
-                        <FieldTile label="Token ID" value={`#${title.tokenId.toString()}`} />
-                      </Box>
-                    </SectionCard>
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <DetailRow label="VIN" value={title.record.vin} />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <DetailRow label="Current Holder" value={shortAddress(title.owner)} />
+                  </Grid>
 
-                    <SectionCard
-                      title="Ownership & Registry Status"
-                      subtitle="Current holder, title condition, and record state."
-                    >
-                      <Box
-                        sx={{
-                          display: 'grid',
-                          gridTemplateColumns: {
-                            xs: 'repeat(2, minmax(0, 1fr))',
-                            md: 'repeat(3, minmax(0, 1fr))'
-                          },
-                          gap: 1.5
-                        }}
-                      >
-                        <FieldTile label="Current Holder" value={shortAddress(title.owner)} wide />
-                        <FieldTile
-                          label="Title Brand"
-                          value={titleBrandLabel(title.record.brand)}
-                        />
-                        <FieldTile
-                          label="Record State"
-                          value={recordStateLabel(title.record.state)}
-                        />
-                        <FieldTile
-                          label="Legacy Digitised"
-                          value={title.record.legacyDigitized ? 'Yes' : 'No'}
-                        />
-                      </Box>
-                    </SectionCard>
-
-                    <SectionCard
-                      title="Usage & Audit"
-                      subtitle="Mileage, reference data, and registry timestamps."
-                    >
-                      <Box
-                        sx={{
-                          display: 'grid',
-                          gridTemplateColumns: {
-                            xs: 'repeat(2, minmax(0, 1fr))',
-                            md: 'repeat(2, minmax(0, 1fr))'
-                          },
-                          gap: 1.5
-                        }}
-                      >
-                        <FieldTile label="Mileage" value={formatBigint(title.record.mileage)} />
-                        <FieldTile
-                          label="QR / Reference Data"
-                          value={title.record.qrCodeData || '—'}
-                          wide
-                        />
-                        <FieldTile label="Created" value={formatDate(title.record.createdAt)} />
-                        <FieldTile label="Updated" value={formatDate(title.record.updatedAt)} />
-                      </Box>
-                    </SectionCard>
-
-                    <Card
-                      sx={{
-                        borderRadius: 4,
-                        border: '1px solid rgba(255,255,255,0.08)',
-                        background:
-                          'linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.018) 100%)'
-                      }}
-                    >
-                      <CardContent sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
-                        <Stack
-                          direction={{ xs: 'column', sm: 'row' }}
-                          spacing={1.5}
-                          flexWrap="wrap"
-                          useFlexGap
-                        >
-                          <Button component={RouterLink} to="/transfer" variant="contained">
-                            Transfer Title
-                          </Button>
-                          <Button component={RouterLink} to="/record-controls" variant="outlined">
-                            Record Controls
-                          </Button>
-                        </Stack>
-                      </CardContent>
-                    </Card>
-                  </Stack>
+                  <Grid size={{ xs: 6, md: 3 }}>
+                    <DetailRow label="Make" value={title.record.make} />
+                  </Grid>
+                  <Grid size={{ xs: 6, md: 3 }}>
+                    <DetailRow label="Model" value={title.record.model} />
+                  </Grid>
+                  <Grid size={{ xs: 6, md: 3 }}>
+                    <DetailRow label="Year" value={title.record.year.toString()} />
+                  </Grid>
+                  <Grid size={{ xs: 6, md: 3 }}>
+                    <DetailRow label="Token ID" value={`#${title.tokenId.toString()}`} />
+                  </Grid>
                 </Grid>
+              </Stack>
+            </Panel>
 
-                <Grid size={{ xs: 12, lg: 4 }}>
-                  <Stack spacing={2}>
-                    <SectionCard title="VIN QR" subtitle={`Encoded VIN: ${title.record.vin}`}>
-                      <Stack spacing={1.5} alignItems="center">
+            <Stack spacing={2} sx={{ mt: 2 }}>
+              <Panel
+                title="Ownership & Registry Status"
+                subtitle="Current holder, title condition, and record state."
+              >
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <DetailRow label="Title Brand" value={titleBrandLabel(title.record.brand)} />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <DetailRow label="Record State" value={recordStateLabel(title.record.state)} />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <DetailRow label="Legacy Digitised" value={title.record.legacyDigitized ? 'Yes' : 'No'} />
+                  </Grid>
+                </Grid>
+              </Panel>
+
+              <Panel
+                title="Usage & Audit"
+                subtitle="Mileage, reference data, and registry timestamps."
+              >
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 12, md: 4 }}>
+                    <DetailRow label="Mileage" value={formatBigint(title.record.mileage)} />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 8 }}>
+                    <DetailRow label="QR / Reference Data" value={title.record.qrCodeData || '—'} />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <DetailRow label="Created" value={formatDate(title.record.createdAt)} />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <DetailRow label="Updated" value={formatDate(title.record.updatedAt)} />
+                  </Grid>
+                </Grid>
+              </Panel>
+
+              <Panel title="Actions">
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25} flexWrap="wrap" useFlexGap>
+                  <Button component={RouterLink} to="/transfer" variant="contained">
+                    Transfer Title
+                  </Button>
+                  <Button component={RouterLink} to="/record-controls" variant="outlined">
+                    Record Controls
+                  </Button>
+                </Stack>
+              </Panel>
+            </Stack>
+          </Grid>
+
+          <Grid size={{ xs: 12, lg: 4 }}>
+            <Stack spacing={2}>
+              <Panel title="VIN QR" subtitle={`Encoded VIN: ${title.record.vin}`}>
+                <Stack spacing={1.25} alignItems="center">
+                  <Box
+                    component="img"
+                    src={qrUrl}
+                    alt="VIN QR"
+                    sx={{
+                      width: { xs: 180, sm: 220 },
+                      height: { xs: 180, sm: 220 },
+                      borderRadius: 1.5,
+                      bgcolor: '#fff',
+                      p: 1,
+                      border: '1px solid rgba(255,255,255,0.08)'
+                    }}
+                  />
+                </Stack>
+              </Panel>
+
+              <Panel title="Vehicle Images / Metadata" subtitle="Token metadata or image reference.">
+                <Stack spacing={1.25}>
+                  {imageUrl ? (
+                    <>
+                      {looksLikeImage(imageUrl) ? (
                         <Box
                           component="img"
-                          src={qrUrl}
-                          alt="VIN QR"
+                          src={imageUrl}
+                          alt="Vehicle metadata"
                           sx={{
-                            width: { xs: 200, sm: 220 },
-                            height: { xs: 200, sm: 220 },
-                            borderRadius: 3,
-                            bgcolor: '#fff',
-                            p: 1.25,
+                            width: '100%',
+                            maxHeight: 260,
+                            objectFit: 'cover',
+                            borderRadius: 1.5,
                             border: '1px solid rgba(255,255,255,0.08)'
                           }}
                         />
-                      </Stack>
-                    </SectionCard>
+                      ) : null}
 
-                    <SectionCard
-                      title="Vehicle Images / Metadata"
-                      subtitle="Token metadata or image reference."
-                    >
-                      <Stack spacing={1.5}>
-                        {imageUrl ? (
-                          <>
-                            {looksLikeImage(imageUrl) ? (
-                              <Box
-                                component="img"
-                                src={imageUrl}
-                                alt="Vehicle metadata"
-                                sx={{
-                                  width: '100%',
-                                  maxHeight: 280,
-                                  objectFit: 'cover',
-                                  borderRadius: 2.5,
-                                  border: '1px solid rgba(255,255,255,0.08)'
-                                }}
-                              />
-                            ) : null}
-
-                            <Link
-                              href={imageUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              sx={{ wordBreak: 'break-all' }}
-                            >
-                              {title.tokenURI}
-                            </Link>
-                          </>
-                        ) : (
-                          <Typography color="text.secondary">No token URI set.</Typography>
-                        )}
-                      </Stack>
-                    </SectionCard>
-                  </Stack>
-                </Grid>
-              </Grid>
+                      <Link href={imageUrl} target="_blank" rel="noreferrer" sx={{ wordBreak: 'break-all' }}>
+                        {title.tokenURI}
+                      </Link>
+                    </>
+                  ) : (
+                    <Typography color="text.secondary">No token URI set.</Typography>
+                  )}
+                </Stack>
+              </Panel>
             </Stack>
-          </CardContent>
-        </Card>
+          </Grid>
+        </Grid>
 
-        <SectionCard
+        <Panel
           title="Record Notes & History"
           subtitle="Official updates, user notes, and timeline history for this title."
         >
-          <Stack spacing={1.5}>
+          <Stack spacing={1.25}>
             {notes.length ? (
               notes.map((note) => (
                 <Box
                   key={`${note.index.toString()}-${note.timestamp.toString()}`}
                   sx={{
-                    p: 2,
+                    p: 1.5,
                     border: '1px solid rgba(255,255,255,0.08)',
-                    borderRadius: 3,
+                    borderRadius: 2,
                     bgcolor: 'rgba(255,255,255,0.02)'
                   }}
                 >
-                  <Stack spacing={1}>
+                  <Stack spacing={0.75}>
                     <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
                       <Chip size="small" label={`#${note.index.toString()}`} />
                       {note.official ? (
@@ -593,7 +493,7 @@ export function TitleDetailsPage() {
               <Typography color="text.secondary">No notes on this record yet.</Typography>
             )}
           </Stack>
-        </SectionCard>
+        </Panel>
 
         <Box ref={certificateRef} sx={{ display: 'none' }}>
           <div className="sheet">
